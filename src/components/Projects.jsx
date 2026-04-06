@@ -1,74 +1,64 @@
-import { RAG, PHASES, cycleRag } from '../lib/constants'
+import { useState } from 'react'
+import { RAG, PHASES, cycleRag, getPhase } from '../lib/constants'
+import { AddProjectModal } from './Modal'
 
 export default function Projects({ poles, domains, projects, updateProject, addProject, removeProject }) {
-
-  const handleAdd = () => {
-    const name = prompt('Nom du projet :')
-    if (!name) return
-    let choiceStr = ''
-    let domainList = []
-    poles.forEach(pole => {
-      const pDomains = domains.filter(d => d.pole_id === pole.id)
-      if (pDomains.length) {
-        choiceStr += `\n${pole.icon} ${pole.name}\n`
-        pDomains.forEach(d => { domainList.push(d); choiceStr += `  ${domainList.length}. ${d.name}\n` })
-      }
-    })
-    const idx = parseInt(prompt(`Dans quel domaine ?\n${choiceStr}\nNuméro :`) || '1') - 1
-    const domain = domainList[idx]?.id || domains[0]?.id
-    if (domain) addProject(name, domain)
-  }
+  const [showAdd, setShowAdd] = useState(false)
 
   return (
     <div className="container">
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem'}}>
-        <span style={{fontSize:12, color:'#6b7a99', fontStyle:'italic'}}>
-          Cliquer sur une cellule pour éditer · Cliquer sur le statut pour le faire tourner
-        </span>
-        <button className="btn btn-gold" onClick={handleAdd}>+ Ajouter un projet</button>
+      <div className="table-header-row">
+        <span className="table-hint">Cliquer sur une cellule pour éditer · Statut = clic pour changer</span>
+        <button className="btn btn-gold" onClick={() => setShowAdd(true)}>+ Ajouter un projet</button>
       </div>
 
       <div className="card" style={{padding:0, overflow:'hidden'}}>
-        <table className="projects-table">
+        <table className="proj-table">
           <thead>
             <tr>
-              <th>Projet / Initiative</th>
+              <th>Projet</th>
               <th>Domaine</th>
               <th>Priorité</th>
-              <th>Phase & Avancement</th>
+              <th>Phase</th>
               <th>Statut</th>
               <th>Décision / Blocage</th>
-              <th style={{width:32}} />
+              <th style={{width:32}}/>
             </tr>
           </thead>
           <tbody>
             {projects.map(p => {
-              const rag = RAG[p.rag] || RAG.G
-              const phase = PHASES.find(ph => ph.pct === +p.pct) || PHASES[0]
+              const rag   = RAG[p.rag]   || RAG.G
+              const phase = getPhase(p.pct)
+              const dom   = domains.find(d => d.id === p.domain_id)
               return (
                 <tr key={p.id}>
                   <td>
                     <input
-                      className="cell-input"
+                      className="cell-input fw"
                       defaultValue={p.name}
-                      onBlur={e => updateProject(p.id, 'name', e.target.value)}
-                      style={{fontWeight:600}}
+                      onBlur={e => { if(e.target.value !== p.name) updateProject(p.id, { name: e.target.value }) }}
                     />
                   </td>
                   <td>
                     <select
                       className="cell-select"
-                      value={p.domain_id}
-                      onChange={e => updateProject(p.id, 'domain_id', e.target.value)}
+                      value={p.domain_id || ''}
+                      onChange={e => updateProject(p.id, { domain_id: e.target.value })}
                     >
-                      {domains.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      {poles.map(pole => (
+                        <optgroup key={pole.id} label={`${pole.icon} ${pole.name}`}>
+                          {domains.filter(d => d.pole_id === pole.id).map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
                     </select>
                   </td>
                   <td>
                     <select
                       className="cell-select"
                       value={p.prio}
-                      onChange={e => updateProject(p.id, 'prio', e.target.value)}
+                      onChange={e => updateProject(p.id, { prio: e.target.value })}
                     >
                       <option value="H">HAUTE</option>
                       <option value="M">MOYENNE</option>
@@ -79,11 +69,11 @@ export default function Projects({ poles, domains, projects, updateProject, addP
                     <select
                       className="phase-select"
                       value={p.pct}
-                      style={{background: phase.color, color: phase.textColor}}
-                      onChange={e => updateProject(p.id, 'pct', +e.target.value)}
+                      style={{background:phase.bg, color:phase.color}}
+                      onChange={e => updateProject(p.id, { pct: +e.target.value })}
                     >
                       {PHASES.map(ph => (
-                        <option key={ph.pct} value={ph.pct} style={{background:ph.color, color:ph.textColor}}>
+                        <option key={ph.pct} value={ph.pct} style={{background:ph.bg, color:ph.color}}>
                           {ph.label} — {ph.pct}%
                         </option>
                       ))}
@@ -91,21 +81,20 @@ export default function Projects({ poles, domains, projects, updateProject, addP
                   </td>
                   <td>
                     <button
-                      className="rag-badge"
-                      style={{background:rag.bg, color:rag.text}}
-                      onClick={() => updateProject(p.id, 'rag', cycleRag(p.rag))}
+                      className="rag-btn"
+                      style={{background:rag.bg, color:rag.color}}
+                      onClick={() => updateProject(p.id, { rag: cycleRag(p.rag) })}
                     >
-                      <span style={{width:7,height:7,borderRadius:'50%',background:rag.dot,display:'inline-block',marginRight:5}} />
+                      <span style={{width:7,height:7,borderRadius:'50%',background:rag.dot,display:'inline-block',marginRight:5}}/>
                       {rag.label}
                     </button>
                   </td>
                   <td>
                     <input
-                      className="cell-input"
+                      className="cell-input decision"
                       defaultValue={p.decision || ''}
-                      onBlur={e => updateProject(p.id, 'decision', e.target.value)}
+                      onBlur={e => { if(e.target.value !== p.decision) updateProject(p.id, { decision: e.target.value }) }}
                       placeholder="—"
-                      style={{fontStyle:'italic', color:'#f59e0b'}}
                     />
                   </td>
                   <td>
@@ -117,6 +106,15 @@ export default function Projects({ poles, domains, projects, updateProject, addP
           </tbody>
         </table>
       </div>
+
+      {showAdd && (
+        <AddProjectModal
+          poles={poles}
+          domains={domains}
+          onAdd={addProject}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
     </div>
   )
 }

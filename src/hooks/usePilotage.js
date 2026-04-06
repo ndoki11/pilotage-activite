@@ -1,16 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function usePilotage() {
-  const [poles, setPoles] = useState([])
-  const [domains, setDomains] = useState([])
-  const [projects, setProjects] = useState([])
-  const [incidents, setIncidents] = useState([])
-  const [expertises, setExpertises] = useState([])
-  const [settings, setSettings] = useState({ period: 'Bilan au 15 avril 2026', period_days: 20 })
-  const [loading, setLoading] = useState(true)
+// ─────────────────────────────────────────────────────────
+// RÈGLE UNIQUE : setState AVANT supabase, toujours.
+// L'écran ne attend jamais le réseau.
+// ─────────────────────────────────────────────────────────
 
-  // ── LOAD ALL ──
+export function usePilotage() {
+  const [poles,      setPoles]      = useState([])
+  const [domains,    setDomains]    = useState([])
+  const [projects,   setProjects]   = useState([])
+  const [incidents,  setIncidents]  = useState([])
+  const [expertises, setExpertises] = useState([])
+  const [settings,   setSettings]   = useState({ period: 'Bilan au 15 avril 2026', period_days: 20 })
+  const [loading,    setLoading]    = useState(true)
+
+  // ── Chargement initial ──────────────────────────────────
   const loadAll = useCallback(async () => {
     const [p, d, pr, i, e, s] = await Promise.all([
       supabase.from('poles').select('*').order('sort_order'),
@@ -20,14 +25,13 @@ export function usePilotage() {
       supabase.from('expertises').select('*').order('created_at'),
       supabase.from('settings').select('*'),
     ])
-    setPoles(p.data || [])
-    setDomains(d.data || [])
-    setProjects(pr.data || [])
-    setIncidents(i.data || [])
-    setExpertises(e.data || [])
+    if (p.data)  setPoles(p.data)
+    if (d.data)  setDomains(d.data)
+    if (pr.data) setProjects(pr.data)
+    if (i.data)  setIncidents(i.data)
+    if (e.data)  setExpertises(e.data)
     if (s.data) {
-      const obj = {}
-      s.data.forEach(r => obj[r.key] = r.value)
+      const obj = Object.fromEntries(s.data.map(r => [r.key, r.value]))
       setSettings({ period: obj.period || 'Bilan au 15 avril 2026', period_days: parseInt(obj.period_days) || 20 })
     }
     setLoading(false)
@@ -35,105 +39,103 @@ export function usePilotage() {
 
   useEffect(() => { loadAll() }, [loadAll])
 
-  // ── REALTIME ──
+  // ── Realtime : sync multi-device ───────────────────────
   useEffect(() => {
-    const tables = ['poles', 'domains', 'projects', 'incidents', 'expertises', 'settings']
-    const subs = tables.map(t =>
-      supabase.channel(`${t}-changes`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: t }, () => loadAll())
-        .subscribe()
-    )
-    return () => subs.forEach(s => supabase.removeChannel(s))
+    const channel = supabase.channel('pilotage-all')
+    ;['poles','domains','projects','incidents','expertises','settings'].forEach(t => {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table: t }, loadAll)
+    })
+    channel.subscribe()
+    return () => supabase.removeChannel(channel)
   }, [loadAll])
 
-  // ── SETTINGS ──
-  const updateSetting = async (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }))
-    await supabase.from('settings').upsert({ key, value: String(value) })
+  // ── Settings ───────────────────────────────────────────
+  const updateSetting = (key, value) => {
+    setSettings(s => ({ ...s, [key]: value }))
+    supabase.from('settings').upsert({ key, value: String(value) })
   }
 
-  // ── DOMAINS ──
-  const updateDomainRag = async (id, rag) => {
-    setDomains(prev => prev.map(d => d.id === id ? { ...d, rag } : d))
-    await supabase.from('domains').update({ rag }).eq('id', id)
+  // ── Domaines ───────────────────────────────────────────
+  const updateDomain = (id, patch) => {
+    setDomains(prev => prev.map(d => d.id === id ? { ...d, ...patch } : d))
+    supabase.from('domains').update(patch).eq('id', id)
   }
-  const updateDomainComment = async (id, comment) => {
-    setDomains(prev => prev.map(d => d.id === id ? { ...d, comment } : d))
-    await supabase.from('domains').update({ comment }).eq('id', id)
+
+  const addDomain = (name, sub, poleId) => {
+    const d = { id: name, pole_id: poleId, name, sub, rag: 'G', comment: '', days: 0, color: '#6b7a99', sort_order: 99 }
+    setDomains(prev => [...prev, d])
+    supabase.from('domains').insert(d)
   }
-  const updateDomainDays = async (id, days) => {
-    setDomains(prev => prev.map(d => d.id === id ? { ...d, days: parseFloat(days) } : d))
-    await supabase.from('domains').update({ days: parseFloat(days) }).eq('id', id)
-  }
-  const addDomain = async (name, sub, poleId) => {
-    const newDomain = { id: name, pole_id: poleId, name, sub, rag: 'G', comment: '', days: 0, color: '#6b7a99', sort_order: domains.length + 1 }
-    setDomains(prev => [...prev, newDomain])
-    await supabase.from('domains').insert(newDomain)
-  }
-  const removeDomain = async (id) => {
+
+  const removeDomain = (id) => {
     setDomains(prev => prev.filter(d => d.id !== id))
     setProjects(prev => prev.filter(p => p.domain_id !== id))
-    await supabase.from('projects').delete().eq('domain_id', id)
-    await supabase.from('domains').delete().eq('id', id)
+    supabase.from('projects').delete().eq('domain_id', id)
+    supabase.from('domains').delete().eq('id', id)
   }
 
-  // ── PROJECTS ──
-  const updateProject = async (id, field, value) => {
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))
-    await supabase.from('projects').update({ [field]: value }).eq('id', id)
+  // ── Projets ────────────────────────────────────────────
+  const updateProject = (id, patch) => {
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
+    supabase.from('projects').update(patch).eq('id', id)
   }
-  const addProject = async (name, domainId, prio = 'M') => {
-    const id = 'p_' + Date.now()
-    const newProject = { id, domain_id: domainId, name, prio, pct: 0, rag: 'G', decision: '', sort_order: projects.length + 1 }
-    setProjects(prev => [...prev, newProject])
-    await supabase.from('projects').insert(newProject)
+
+  const addProject = (name, domainId, prio = 'M') => {
+    const p = { id: uid(), domain_id: domainId, name, prio, pct: 0, rag: 'G', decision: '', sort_order: 99 }
+    setProjects(prev => [...prev, p])
+    supabase.from('projects').insert(p)
   }
-  const removeProject = async (id) => {
+
+  const removeProject = (id) => {
     setProjects(prev => prev.filter(p => p.id !== id))
-    await supabase.from('projects').delete().eq('id', id)
+    supabase.from('projects').delete().eq('id', id)
   }
 
-  // ── INCIDENTS ──
-  const addIncident = async (domainId, type, text) => {
-    const id = 'i_' + Date.now()
-    const newInc = { id, domain_id: domainId, type, text, created_at: new Date().toISOString() }
-    setIncidents(prev => [...prev, newInc])
-    await supabase.from('incidents').insert(newInc)
+  // ── Incidents ──────────────────────────────────────────
+  const addIncident = (domainId, type, text) => {
+    const i = { id: uid(), domain_id: domainId, type, text, created_at: new Date().toISOString() }
+    setIncidents(prev => [...prev, i])
+    supabase.from('incidents').insert(i)
   }
-  const updateIncident = async (id, text) => {
+
+  const updateIncident = (id, text) => {
     setIncidents(prev => prev.map(i => i.id === id ? { ...i, text } : i))
-    await supabase.from('incidents').update({ text }).eq('id', id)
-  }
-  const removeIncident = async (id) => {
-    setIncidents(prev => prev.filter(i => i.id !== id))
-    await supabase.from('incidents').delete().eq('id', id)
+    supabase.from('incidents').update({ text }).eq('id', id)
   }
 
-  // ── EXPERTISES ──
-  const addExpertise = async (domainId, text) => {
-    const id = 'e_' + Date.now()
-    const newExp = { id, domain_id: domainId, text, created_at: new Date().toISOString() }
-    setExpertises(prev => [...prev, newExp])
-    await supabase.from('expertises').insert(newExp)
+  const removeIncident = (id) => {
+    setIncidents(prev => prev.filter(i => i.id !== id))
+    supabase.from('incidents').delete().eq('id', id)
   }
-  const updateExpertise = async (id, text) => {
+
+  // ── Expertises ─────────────────────────────────────────
+  const addExpertise = (domainId, text) => {
+    const e = { id: uid(), domain_id: domainId, text, created_at: new Date().toISOString() }
+    setExpertises(prev => [...prev, e])
+    supabase.from('expertises').insert(e)
+  }
+
+  const updateExpertise = (id, text) => {
     setExpertises(prev => prev.map(e => e.id === id ? { ...e, text } : e))
-    await supabase.from('expertises').update({ text }).eq('id', id)
+    supabase.from('expertises').update({ text }).eq('id', id)
   }
-  const removeExpertise = async (id) => {
+
+  const removeExpertise = (id) => {
     setExpertises(prev => prev.filter(e => e.id !== id))
-    await supabase.from('expertises').delete().eq('id', id)
+    supabase.from('expertises').delete().eq('id', id)
   }
 
   return {
     poles, domains, projects,
-    incidents: incidents.filter(i => i.type !== 'cph'),
-    cphs: incidents.filter(i => i.type === 'cph'),
+    incidents:  incidents.filter(i => i.type !== 'cph'),
+    cphs:       incidents.filter(i => i.type === 'cph'),
     expertises, settings, loading,
     updateSetting,
-    updateDomainRag, updateDomainComment, updateDomainDays, addDomain, removeDomain,
+    updateDomain,  addDomain,  removeDomain,
     updateProject, addProject, removeProject,
-    addIncident, updateIncident, removeIncident,
-    addExpertise, updateExpertise, removeExpertise,
+    addIncident,   updateIncident,  removeIncident,
+    addExpertise,  updateExpertise, removeExpertise,
   }
 }
+
+function uid() { return '_' + Math.random().toString(36).slice(2, 9) }
