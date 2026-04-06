@@ -14,14 +14,12 @@ export function usePilotage() {
   const [expertises, setExpertises] = useState([])
   const [settings,   setSettings]   = useState({ period: 'Bilan au 15 avril 2026', period_days: 20 })
   const [loading,    setLoading]    = useState(true)
-  const [collapsed,  setCollapsed]  = useState(() => {
-    try { return JSON.parse(localStorage.getItem('pilotage_collapsed') || '{}') } catch { return {} }
-  })
+  const [collapsed, setCollapsed] = useState({})
 
   const toggleCollapsed = (poleId) => {
     setCollapsed(prev => {
       const next = { ...prev, [poleId]: !prev[poleId] }
-      localStorage.setItem('pilotage_collapsed', JSON.stringify(next))
+      try { localStorage.setItem('pilotage_collapsed', JSON.stringify(next)) } catch {}
       return next
     })
   }

@@ -149,9 +149,9 @@ export function EditDomainModal({ domain, poles, onSave, onClose }) {
     </Modal>
   )
 }
-  const [domainId, setDomainId] = useState(domains[0]?.id || '')
 
 export function AddIncidentModal({ domains, type, onAdd, onClose }) {
+  const [domainId, setDomainId] = useState(domains[0]?.id || '')
   const [incType,  setIncType]  = useState(type || 'incident')
   const [text,     setText]     = useState('')
 
