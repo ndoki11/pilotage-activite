@@ -117,8 +117,41 @@ export function AddDomainModal({ poles, onAdd, onClose }) {
   )
 }
 
-export function AddIncidentModal({ domains, type, onAdd, onClose }) {
+export function EditDomainModal({ domain, poles, onSave, onClose }) {
+  const [name,   setName]   = useState(domain.name)
+  const [sub,    setSub]    = useState(domain.sub || '')
+  const [poleId, setPoleId] = useState(domain.pole_id)
+
+  const handle = () => {
+    if (!name.trim()) return
+    onSave(domain.id, { name: name.trim(), sub: sub.trim(), pole_id: poleId })
+    onClose()
+  }
+
+  return (
+    <Modal title="Modifier le domaine" onClose={onClose}>
+      <div className="modal-body">
+        <label className="form-label">Nom du domaine</label>
+        <input className="form-input" value={name} onChange={e => setName(e.target.value)} autoFocus/>
+
+        <label className="form-label">Technologies / Outils</label>
+        <input className="form-input" value={sub} onChange={e => setSub(e.target.value)} placeholder="Ex: AWS · Azure"/>
+
+        <label className="form-label">Pôle</label>
+        <select className="form-select" value={poleId} onChange={e => setPoleId(e.target.value)}>
+          {poles.map(p => <option key={p.id} value={p.id}>{p.icon} {p.name}</option>)}
+        </select>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-ghost-dark" onClick={onClose}>Annuler</button>
+        <button className="btn btn-gold" onClick={handle} disabled={!name.trim()}>Enregistrer</button>
+      </div>
+    </Modal>
+  )
+}
   const [domainId, setDomainId] = useState(domains[0]?.id || '')
+
+export function AddIncidentModal({ domains, type, onAdd, onClose }) {
   const [incType,  setIncType]  = useState(type || 'incident')
   const [text,     setText]     = useState('')
 
@@ -165,3 +198,5 @@ export function AddIncidentModal({ domains, type, onAdd, onClose }) {
     </Modal>
   )
 }
+
+

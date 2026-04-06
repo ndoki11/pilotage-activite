@@ -14,6 +14,17 @@ export function usePilotage() {
   const [expertises, setExpertises] = useState([])
   const [settings,   setSettings]   = useState({ period: 'Bilan au 15 avril 2026', period_days: 20 })
   const [loading,    setLoading]    = useState(true)
+  const [collapsed,  setCollapsed]  = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pilotage_collapsed') || '{}') } catch { return {} }
+  })
+
+  const toggleCollapsed = (poleId) => {
+    setCollapsed(prev => {
+      const next = { ...prev, [poleId]: !prev[poleId] }
+      localStorage.setItem('pilotage_collapsed', JSON.stringify(next))
+      return next
+    })
+  }
 
   // ── Chargement initial ──────────────────────────────────
   const loadAll = useCallback(async () => {
@@ -130,6 +141,7 @@ export function usePilotage() {
     incidents:  incidents.filter(i => i.type !== 'cph'),
     cphs:       incidents.filter(i => i.type === 'cph'),
     expertises, settings, loading,
+    collapsed, toggleCollapsed,
     updateSetting,
     updateDomain,  addDomain,  removeDomain,
     updateProject, addProject, removeProject,

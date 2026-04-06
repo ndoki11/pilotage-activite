@@ -5,6 +5,7 @@ import Projects  from './components/Projects'
 import Charge    from './components/Charge'
 import Incidents from './components/Incidents'
 import Synthese  from './components/Synthese'
+import Notice    from './components/Notice'
 import './index.css'
 
 const TABS = [
@@ -13,6 +14,7 @@ const TABS = [
   { id:'charge',    label:'⚖️ Charge' },
   { id:'incidents', label:'⚡ Incidents & Expertise' },
   { id:'synthese',  label:'📸 Synthèse J15/J30' },
+  { id:'notice',    label:'📖 Notice' },
 ]
 
 export default function App() {
@@ -31,21 +33,17 @@ export default function App() {
         <div className="topbar-left">
           <span className="topbar-logo">⬡ PILOTAGE</span>
           <div className="period-wrap">
-            <input
-              className="period-input"
-              value={db.settings.period}
-              onChange={e => db.updateSetting('period', e.target.value)}
-            />
+            <input className="period-input" value={db.settings.period} onChange={e=>db.updateSetting('period',e.target.value)}/>
           </div>
         </div>
         <div className="topbar-right">
-          <button className="btn btn-gold" onClick={() => setTab('synthese')}>📸 Synthèse</button>
+          <button className="btn btn-gold" onClick={()=>setTab('synthese')}>📸 Synthèse</button>
         </div>
       </div>
 
       <div className="tabs">
-        {TABS.map(t => (
-          <button key={t.id} className={`tab${tab===t.id?' active':''}`} onClick={() => setTab(t.id)}>
+        {TABS.map(t=>(
+          <button key={t.id} className={`tab${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>
             {t.label}
           </button>
         ))}
@@ -57,6 +55,7 @@ export default function App() {
         {tab==='charge'    && <Charge    {...db}/>}
         {tab==='incidents' && <Incidents {...db}/>}
         {tab==='synthese'  && <Synthese  {...db}/>}
+        {tab==='notice'    && <Notice    onNavigate={setTab}/>}
       </div>
     </div>
   )
