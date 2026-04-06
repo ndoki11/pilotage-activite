@@ -134,12 +134,30 @@ export function usePilotage() {
     supabase.from('expertises').delete().eq('id', id)
   }
 
+  // ── Clôture bilan ─────────────────────────────────────
+  const cloturerBilan = async () => {
+    const snapshot = {
+      poles, domains, projects,
+      incidents: incidents.concat(incidents.filter(i => i.type === 'cph')),
+      expertises, settings,
+      clotured_at: new Date().toISOString(),
+    }
+    const id = 'bilan_' + Date.now()
+    await supabase.from('bilans').insert({
+      id,
+      period: settings.period,
+      snapshot,
+    })
+    return id
+  }
+
   return {
     poles, domains, projects,
     incidents:  incidents.filter(i => i.type !== 'cph'),
     cphs:       incidents.filter(i => i.type === 'cph'),
     expertises, settings, loading,
     collapsed, toggleCollapsed,
+    cloturerBilan,
     updateSetting,
     updateDomain,  addDomain,  removeDomain,
     updateProject, addProject, removeProject,

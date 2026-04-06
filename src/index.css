@@ -247,3 +247,57 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tex
 
 /* Notice footer */
 .notice-footer { display:flex; justify-content:space-between; align-items:center; padding:1.5rem 0; border-top:2px solid var(--navy); margin-top:1rem; font-size:11px; color:var(--muted); flex-wrap:wrap; gap:.5rem; }
+
+/* ── ALERTE NOTICE ── */
+.notice-alert { display:flex; gap:1rem; background:#fff3cd; border:1px solid #f59e0b; border-left:4px solid #d97706; border-radius:10px; padding:1.25rem 1.5rem; margin-bottom:2rem; }
+.notice-alert-icon { font-size:24px; flex-shrink:0; }
+.notice-alert-title { font-family:'Syne',sans-serif; font-weight:700; font-size:14px; color:#92400e; margin-bottom:.4rem; }
+.notice-alert-text { font-size:13px; color:#78350f; line-height:1.7; }
+.notice-alert-text code { background:rgba(0,0,0,.08); padding:1px 5px; border-radius:3px; font-family:'DM Mono',monospace; font-size:12px; }
+
+/* ── FLUX SCHEMA ── */
+.flux-schema { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:1.5rem; display:flex; flex-direction:column; align-items:center; gap:.5rem; }
+.flux-row { display:flex; justify-content:center; gap:.5rem; width:100%; }
+.flux-5col { display:grid; grid-template-columns:repeat(5,1fr); gap:.4rem; width:100%; }
+.flux-3col { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; width:100%; }
+.flux-arrows-center { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.flux-arrow { font-size:20px; color:var(--muted); line-height:1; }
+.flux-arrow-label { font-size:10px; color:var(--muted); font-style:italic; }
+.flux-arrow-side { font-size:10px; color:var(--muted); font-style:italic; }
+.flux-box { border-radius:8px; padding:.6rem 1rem; text-align:center; border:1px solid; min-width:160px; }
+.flux-box.flux-small { min-width:0; padding:.5rem .6rem; }
+.flux-box-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; }
+.flux-box-sub { font-size:10px; margin-top:2px; opacity:.8; }
+.flux-teal  { background:#e1f5ee; border-color:#1d9e75; color:#085041; }
+.flux-purple{ background:#eeedfe; border-color:#534ab7; color:#26215c; }
+.flux-blue  { background:#e6f1fb; border-color:#378add; color:#042c53; }
+.flux-amber { background:#faeeda; border-color:#ba7517; color:#412402; }
+.flux-coral { background:#faece7; border-color:#993c1d; color:#4a1b0c; }
+
+/* ── SYNTHESE GUIDE ── */
+.synth-guide { background:#f0f7ff; border:1px solid #b5d4f4; border-radius:10px; padding:1rem 1.25rem; margin-bottom:1rem; }
+.synth-guide-title { font-family:'Syne',sans-serif; font-size:12px; font-weight:700; color:#185fa5; margin-bottom:.6rem; }
+.synth-guide-steps { display:flex; flex-direction:column; gap:.4rem; }
+.synth-guide-step { display:flex; gap:.75rem; font-size:12px; color:#0c447c; align-items:flex-start; }
+.synth-guide-num { font-family:'DM Mono',monospace; font-size:11px; color:#378add; min-width:18px; font-weight:700; padding-top:1px; }
+.synth-guide-step code { background:rgba(0,0,0,.06); padding:1px 5px; border-radius:3px; font-family:'DM Mono',monospace; font-size:11px; }
+
+/* ── BOUTON CLOTURE ── */
+.btn-cloture { background:var(--navy); color:#fff; font-size:12px; font-weight:600; padding:7px 16px; border-radius:6px; border:none; cursor:pointer; transition:all .15s; }
+.btn-cloture:hover:not(:disabled) { background:#2d3f6b; }
+.btn-cloture:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ── BILAN CALENDAR ── */
+.bilan-calendar { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1rem; }
+.bilan-row { display:flex; align-items:center; gap:1rem; padding:.9rem 1.25rem; border-radius:8px; flex-wrap:wrap; }
+.bilan-freq { font-family:'Syne',sans-serif; font-size:15px; font-weight:800; min-width:100px; }
+.bilan-when { font-size:13px; font-weight:600; color:var(--navy); margin-bottom:2px; }
+.bilan-action { font-family:'DM Mono',monospace; font-size:11px; color:#4a5568; }
+.bilan-status { font-size:11px; font-weight:600; white-space:nowrap; }
+
+/* ── ROADMAP ── */
+.roadmap-list { display:flex; flex-direction:column; gap:.75rem; }
+.roadmap-phase { padding:1rem 1.25rem; border-radius:8px; }
+.roadmap-phase-title { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; margin-bottom:2px; }
+.roadmap-condition { font-size:11px; color:var(--muted); font-style:italic; margin-bottom:.6rem; }
+.roadmap-item { display:flex; gap:.6rem; font-size:13px; color:#3a3a5c; padding:2px 0; }

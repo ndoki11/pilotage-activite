@@ -1,18 +1,67 @@
+import { useState } from 'react'
 import { RAG, getPhase } from '../lib/constants'
 
-export default function Synthese({ poles, domains, projects, incidents, cphs, expertises, settings }) {
+export default function Synthese({ poles, domains, projects, incidents, cphs, expertises, settings, cloturerBilan }) {
+  const [clotureState, setClotureState] = useState('idle') // idle | loading | done | error
+  const [lastBilanId,  setLastBilanId]  = useState(null)
   const total     = settings.period_days || 20
   const decisions = projects.filter(p => p.decision?.trim())
 
+  const handleCloture = async () => {
+    if (!confirm(`Clôturer le bilan "${settings.period}" ?\n\nCela archivera l'état actuel dans votre historique. Vous pourrez continuer à modifier le dashboard après.`)) return
+    setClotureState('loading')
+    try {
+      const id = await cloturerBilan()
+      setLastBilanId(id)
+      setClotureState('done')
+    } catch (e) {
+      console.error(e)
+      setClotureState('error')
+    }
+  }
+
   return (
     <div className="container">
-      <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'1rem', gap:'0.5rem'}}>
-        <span style={{fontSize:12, color:'#6b7a99', alignSelf:'center'}}>Screenshot de la zone blanche → envoyer à Étienne</span>
-        <button className="btn btn-ghost-nav" onClick={() => window.print()}>🖨 Imprimer</button>
+
+      {/* Guide screenshot */}
+      <div className="synth-guide">
+        <div className="synth-guide-title">📸 Comment transmettre ce bilan à Étienne</div>
+        <div className="synth-guide-steps">
+          <div className="synth-guide-step">
+            <span className="synth-guide-num">1</span>
+            <span><strong>PDF (recommandé)</strong> — Clique sur 🖨 Imprimer → sélectionne "Enregistrer en PDF" → envoie le PDF par Teams ou mail</span>
+          </div>
+          <div className="synth-guide-step">
+            <span className="synth-guide-num">2</span>
+            <span><strong>Screenshot Mac</strong> — <code>Cmd + Shift + 4</code> → sélectionne la zone blanche ci-dessous</span>
+          </div>
+          <div className="synth-guide-step">
+            <span className="synth-guide-num">3</span>
+            <span><strong>Screenshot iPhone</strong> — Ouvre l'app sur Safari → appui simultané bouton latéral + volume haut</span>
+          </div>
+        </div>
       </div>
 
-      <div className="screenshot-area">
-        {/* Header */}
+      {/* Actions */}
+      <div style={{display:'flex', justifyContent:'flex-end', gap:'0.75rem', marginBottom:'1rem', alignItems:'center', flexWrap:'wrap'}}>
+        {clotureState === 'done' && (
+          <span style={{fontSize:12, color:'#22c55e', fontWeight:600}}>✓ Bilan archivé dans l'historique</span>
+        )}
+        {clotureState === 'error' && (
+          <span style={{fontSize:12, color:'#ef4444'}}>Erreur lors de l'archivage — réessaie</span>
+        )}
+        <button
+          className="btn btn-cloture"
+          onClick={handleCloture}
+          disabled={clotureState === 'loading'}
+        >
+          {clotureState === 'loading' ? '⏳ Archivage…' : '📥 Clôturer ce bilan'}
+        </button>
+        <button className="btn btn-ghost-nav" onClick={() => window.print()}>🖨 Imprimer / PDF</button>
+      </div>
+
+      {/* Zone screenshot */}
+      <div className="screenshot-area" id="screenshot-area">
         <div className="synth-header">
           <div>
             <div className="synth-h2">Bilan de Pilotage — Pôle Infrastructures & Architecture</div>
@@ -24,7 +73,7 @@ export default function Synthese({ poles, domains, projects, incidents, cphs, ex
           </div>
         </div>
 
-        {/* Pôles */}
+        {/* 3 pôles */}
         <div className="synth-section-title">Répartition charge — {total} jours</div>
         <div className="synth-poles">
           {poles.map(pole => {
